@@ -22,8 +22,16 @@ yay -S castr doubletake-git
 Without it the widget says so and tells you this command, rather than sitting
 there looking idle.
 
-AirPlay also needs your firewall to let the receiver connect **back** to your
-machine, on mDNS and on castr's port range. castr's README has the exact rules:
+If you run a firewall, it has to let the receiver connect **back** to your
+machine — AirPlay is not one-way:
+
+| port | why |
+|---|---|
+| UDP 5353 | mDNS, so receivers are discovered at all |
+| TCP + UDP 60000-60010 | the range the receiver connects into to fetch the stream |
+
+Without those, discovery finds nothing or a cast starts and then stalls.
+castr's README carries the exact `ufw` commands:
 [Installing](https://github.com/mrCode/castr#installing).
 
 ## Install
