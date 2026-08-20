@@ -22,19 +22,9 @@ yay -S castr doubletake-git
 Without it the widget says so and tells you this command, rather than sitting
 there looking idle.
 
-Your firewall also has to let the receiver connect **back** to your machine:
-
-```bash
-sudo ufw allow 5353/udp
-```
-
-```bash
-sudo ufw allow 60000:60010/tcp
-```
-
-```bash
-sudo ufw allow 60000:60010/udp
-```
+AirPlay also needs your firewall to let the receiver connect **back** to your
+machine, on mDNS and on castr's port range. castr's README has the exact rules:
+[Installing](https://github.com/mrCode/castr#installing).
 
 ## Install
 
@@ -49,9 +39,9 @@ omarchy plugin remove castr.indicator
 ```
 
 That takes the widget out of the bar and deletes its checkout. It leaves
-`castr` itself alone — remove that with `sudo pacman -Rs castr` if you want it
-gone too. The widget stores nothing of its own; everything it shows comes from
-asking `castr`, so there is no leftover state to clean up.
+`castr` itself alone; uninstall that separately with your package manager if
+you want it gone too. The widget stores nothing of its own — everything it
+shows comes from asking `castr` — so there is no leftover state to clean up.
 
 ## What it shows
 
