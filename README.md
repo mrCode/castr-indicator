@@ -42,6 +42,17 @@ sudo ufw allow 60000:60010/udp
 omarchy plugin add https://github.com/mrCode/castr-indicator.git --enable --yes
 ```
 
+## Remove
+
+```bash
+omarchy plugin remove castr.indicator
+```
+
+That takes the widget out of the bar and deletes its checkout. It leaves
+`castr` itself alone — remove that with `sudo pacman -Rs castr` if you want it
+gone too. The widget stores nothing of its own; everything it shows comes from
+asking `castr`, so there is no leftover state to clean up.
+
 ## What it shows
 
 - **Idle** — a dim icon; the panel lists what it can cast to
