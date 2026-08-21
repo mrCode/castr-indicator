@@ -18,6 +18,17 @@
 //
 // It parses JSON rather than scraping the human output, which would break the
 // moment a column width changed.
+//
+//
+// Receiver names, models and addresses come from mDNS -- from anything on the
+// network that cares to advertise. QML's default textFormat is AutoText, which
+// sniffs for rich text, so a receiver advertising itself as
+// `<img src="http://attacker/x">` would have this widget FETCH that URL. It is
+// not hypothetical: a name of `<b>PWNED</b>` rendered in bold before this was
+// set. Reported by @ryanrhughes against commit eb22e2c.
+//
+// The rule is all of them rather than only the ones carrying remote data, so a
+// Text added later is safe by default instead of by review.
 
 import QtQuick
 import Quickshell
@@ -66,6 +77,17 @@ Panel {
 
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
+
+  // plain() strips the characters a rich-text sniffer needs to see a tag.
+  //
+  // through a Text this file owns -- the shell's PanelToolTip renders into its
+  // own bare Text, which defaults to AutoText. Receiver names reach those
+  // tooltips, so they are neutered before they leave this file. Removing the
+  // angle brackets is deterministic; relying on the sniffer's judgement is not.
+  function plain(value) {
+    return String(value === undefined || value === null ? "" : value)
+      .replace(/[<>]/g, "")
+  }
 
   function refreshStatus() { if (!statusProc.running) statusProc.running = true }
 
@@ -245,7 +267,7 @@ Panel {
     text: root.casting ? "󰄠" : "󰄡"
     active: root.casting || root.busy
     tooltipText: root.installed
-      ? root.tooltip
+      ? root.plain(root.tooltip)
       : "castr is not installed\nInstall it with:  yay -S castr doubletake-git"
 
     onPressed: function(b) {
@@ -290,6 +312,7 @@ Panel {
           Text {
             id: heroIcon
             text: root.casting ? "󰄠" : "󰄡"
+            textFormat: Text.PlainText
             // The theme's own palette: a theme sets foreground/accent/urgent,
             // and inventing colours would ignore whatever the user chose.
             color: root.failed ? Color.urgent : root.casting ? Color.accent : root.fg
@@ -311,6 +334,7 @@ Panel {
 
             Text {
               text: "Cast"
+              textFormat: Text.PlainText
               color: root.fg
               font.family: root.bar.fontFamily
               font.pixelSize: Style.font.title
@@ -324,6 +348,7 @@ Panel {
               // otherwise, and the second is the one the reader can act on.
               text: !root.installed ? "castr is not installed"
                   : String(root.tooltip).split("\n")[0]
+              textFormat: Text.PlainText
               color: (root.failed || !root.installed) ? Color.urgent
                    : Qt.darker(root.fg, 1.4)
               font.family: root.bar.fontFamily
@@ -363,6 +388,7 @@ Panel {
               anchors.right: liveStop.left
               anchors.rightMargin: Style.spacing.md
               text: modelData.name
+              textFormat: Text.PlainText
               color: root.fg
               font.family: root.bar.fontFamily
               font.pixelSize: Style.font.body
@@ -375,7 +401,7 @@ Panel {
               anchors.rightMargin: Style.spacing.md
               anchors.verticalCenter: parent.verticalCenter
               iconText: "󰓛"
-              tooltipText: "Stop casting to " + modelData.name
+              tooltipText: "Stop casting to " + root.plain(modelData.name)
               foreground: root.fg
               hoverColor: Color.urgent
               fontFamily: root.bar.fontFamily
@@ -397,6 +423,7 @@ Panel {
           text: "This widget drives the castr command, which is not on your PATH.\n\n"
               + "    yay -S castr doubletake-git\n\n"
               + "The bar picks it up on its own once it is installed."
+          textFormat: Text.PlainText
           color: Qt.darker(root.fg, 1.2)
           font.family: root.bar.fontFamily
           font.pixelSize: Style.font.caption
@@ -408,6 +435,7 @@ Panel {
           visible: root.installed
           width: parent.width
           text: "MODE"
+          textFormat: Text.PlainText
           foreground: root.fg
           fontFamily: root.bar.fontFamily
         }
@@ -432,6 +460,7 @@ Panel {
           text: root.mode === "extend"
             ? "A second desktop on the receiver. Pick the castr output if asked what to share."
             : "Shows this screen on the receiver."
+          textFormat: Text.PlainText
           color: Qt.darker(root.fg, 1.5)
           font.family: root.bar.fontFamily
           font.pixelSize: Style.font.caption
@@ -449,6 +478,7 @@ Panel {
           width: parent.width
           visible: root.installed
           text: root.loading && root.devices.length === 0 ? "LOOKING FOR RECEIVERS" : "RECEIVERS"
+          textFormat: Text.PlainText
           foreground: root.fg
           fontFamily: root.bar.fontFamily
         }
@@ -457,6 +487,7 @@ Panel {
           width: parent.width
           visible: root.listError !== ""
           text: root.listError
+          textFormat: Text.PlainText
           color: Color.urgent
           font.family: root.bar.fontFamily
           font.pixelSize: Style.font.caption
@@ -468,6 +499,7 @@ Panel {
           visible: root.installed && root.listError === "" && !root.loading && root.devices.length === 0
           text: "Nothing is advertising AirPlay here. A receiver that does not "
               + "answer mDNS can still be added: castr add <address>"
+          textFormat: Text.PlainText
           color: Qt.darker(root.fg, 1.5)
           font.family: root.bar.fontFamily
           font.pixelSize: Style.font.caption
@@ -517,6 +549,7 @@ Panel {
                   // A television and a laptop are different things to cast to,
                   // and the glyph says which without reading the model string.
                   text: root.isTelevision(modelData) ? "󰔂" : "󰌢"
+                  textFormat: Text.PlainText
                   color: rowMouse.containsMouse ? Color.accent : Qt.darker(root.fg, 1.2)
                   font.family: root.bar.fontFamily
                   font.pixelSize: Style.font.icon
@@ -532,6 +565,7 @@ Panel {
 
                   Text {
                     text: modelData.name
+                    textFormat: Text.PlainText
                     color: root.fg
                     font.family: root.bar.fontFamily
                     font.pixelSize: Style.font.body
@@ -541,6 +575,7 @@ Panel {
 
                   Text {
                     text: root.subtitleFor(modelData)
+                    textFormat: Text.PlainText
                     color: Qt.darker(root.fg, 1.5)
                     font.family: root.bar.fontFamily
                     font.pixelSize: Style.font.caption
