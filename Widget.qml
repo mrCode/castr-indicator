@@ -128,9 +128,21 @@ Panel {
     return tvs.sort(byName).concat(rest.sort(byName))
   }
 
+  // A Chromecast mirrors, whatever the pill says.
+  //
+  // Extend needs a virtual output whose contents castr captures and hands to
+  // the receiver, and the Chromecast backend does not do that. The mode is
+  // chosen once for the whole panel, so rather than let a click fail, the row
+  // says what it will actually do.
+  function modeFor(device) {
+    return device.protocol === "chromecast" ? "mirror" : root.mode
+  }
+
   function subtitleFor(device) {
     if (root.actionDeviceId === device.id)
-      return root.mode === "extend" ? "Extending…" : "Mirroring…"
+      return root.modeFor(device) === "extend" ? "Extending…" : "Mirroring…"
+    if (root.mode === "extend" && device.protocol === "chromecast")
+      return "Mirror only — extend is AirPlay"
     if (device.model) return device.model
     // A receiver added by hand has no name of its own, so castr uses the
     // address for both. Printing it twice tells the reader nothing; saying
@@ -139,9 +151,9 @@ Panel {
     return device.address
   }
 
-  function startCast(deviceId) {
-    root.actionDeviceId = deviceId
-    startProc.command = ["castr", "start", deviceId, root.mode]
+  function startCast(device) {
+    root.actionDeviceId = device.id
+    startProc.command = ["castr", "start", device.id, root.modeFor(device)]
     startProc.running = true
     // Closed straight away: a cast takes most of a minute to come up, and the
     // answer belongs on the bar and in a notification, not in a panel held open
@@ -590,7 +602,7 @@ Panel {
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
                   enabled: !row.pending
-                  onClicked: root.startCast(modelData.id)
+                  onClicked: root.startCast(modelData)
                 }
               }
             }

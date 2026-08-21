@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "id": "castr.indicator",
   "name": "Cast indicator",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Basem Aljedai",
-  "description": "Cast your screen to an Apple TV from the bar: mirror or extend, with a live indicator",
+  "description": "Cast your screen to an Apple TV or a Chromecast from the bar: mirror or extend, with a live indicator",
   "kinds": [
     "bar-widget"
   ],
@@ -13,7 +13,7 @@
   },
   "barWidget": {
     "displayName": "Cast indicator",
-    "description": "Cast your screen to an Apple TV from the bar: mirror or extend, with a live indicator",
+    "description": "Cast your screen to an Apple TV or a Chromecast from the bar: mirror or extend, with a live indicator",
     "category": "System",
     "allowMultiple": false,
     "defaultSection": "right"

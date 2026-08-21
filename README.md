@@ -1,14 +1,18 @@
 # Cast indicator
 
 A bar widget for [Omarchy](https://omarchy.org) that casts your screen to an
-Apple TV — mirror it, or extend onto it as a second desktop — and shows what is
-casting.
+Apple TV or a Chromecast — mirror it, or extend onto an Apple TV as a second
+desktop — and shows what is casting.
 
 ![The cast panel](preview.png)
 
 Click the icon for a panel listing the receivers on your network. Pick a mode
 once, click a receiver, and it casts. Televisions sort above laptops, because a
 colleague's MacBook answering AirPlay is noise. Right-click the icon to stop.
+
+Extend is AirPlay only. A Chromecast row says "Mirror only" when Extend is
+selected, and mirrors — rather than letting a click start a cast that cannot
+work.
 
 ## Requires castr
 
@@ -22,13 +26,18 @@ yay -S castr doubletake-git
 Without it the widget says so and tells you this command, rather than sitting
 there looking idle.
 
-If you run a firewall, it has to let the receiver connect **back** to your
-machine — AirPlay is not one-way:
+If you run a firewall, it has to let the receiver reach your machine — neither
+protocol is one-way:
 
 | port | why |
 |---|---|
 | UDP 5353 | mDNS, so receivers are discovered at all |
-| TCP + UDP 60000-60010 | the range the receiver connects into to fetch the stream |
+| TCP + UDP 60000-60010 | the range an Apple TV connects into to fetch the stream |
+| TCP 8010 | where a Chromecast fetches the stream from |
+
+A Chromecast also needs GStreamer, which castr's package lists as optional
+dependencies — the Chromecast capture is castr's own code rather than
+doubletake's.
 
 Without those, discovery finds nothing or a cast starts and then stalls.
 castr's README carries the exact `ufw` commands:
