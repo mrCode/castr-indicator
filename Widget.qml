@@ -280,7 +280,7 @@ Panel {
     active: root.casting || root.busy
     tooltipText: root.installed
       ? root.plain(root.tooltip)
-      : "castr is not installed\nInstall it with:  yay -S castr doubletake-git"
+      : "castr is not installed\nInstall it with:  yay -S castr"
 
     onPressed: function(b) {
       if (b === Qt.RightButton) {
@@ -433,7 +433,9 @@ Panel {
           width: parent.width
           visible: !root.installed
           text: "This widget drives the castr command, which is not on your PATH.\n\n"
-              + "    yay -S castr doubletake-git\n\n"
+              + "    yay -S castr\n\n"
+              + "castr then needs doubletake-git for an Apple TV, or GStreamer for a "
+              + "Chromecast; it names the missing one when you cast.\n\n"
               + "The bar picks it up on its own once it is installed."
           textFormat: Text.PlainText
           color: Qt.darker(root.fg, 1.2)

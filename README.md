@@ -20,11 +20,16 @@ The widget is a front end for [`castr`](https://github.com/mrCode/castr), which
 does the actual work. Install it first:
 
 ```bash
-yay -S castr doubletake-git
+yay -S castr
 ```
 
 Without it the widget says so and tells you this command, rather than sitting
 there looking idle.
+
+castr then needs whichever backend you cast with — `doubletake-git` for an
+Apple TV, GStreamer for a Chromecast — and neither is involved in the other's
+cast. castr's [Installing](https://github.com/mrCode/castr#installing) section
+has both, and castr names the missing one rather than failing obscurely.
 
 If you run a firewall, it has to let the receiver reach your machine — neither
 protocol is one-way:
