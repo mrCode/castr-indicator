@@ -69,11 +69,28 @@ shows comes from asking `castr` — so there is no leftover state to clean up.
 
 - **Idle** — a dim icon; the panel lists what it can cast to
 - **Connecting** — a screen-share prompt may be waiting for you; answer it
+- **Pairing** — the receiver is showing a code; the panel opens with a field for it
 - **Streaming** — the receiver and mode, with a stop button
 - **Failed** — what went wrong, in the receiver's own words where there are any
 
 The icon stays visible whether or not you are casting. A control you cannot see
 is a control you cannot find, and this one is how you stop.
+
+## Pairing
+
+The first cast to a receiver makes it show a code on its screen. castr parks
+the cast until it gets that code, and the panel opens itself with a field to
+type it into. Enter sends it; Escape closes the panel and leaves the cast
+waiting, which is what clicking the icon brings back. The panel opens once per
+request rather than on every poll, so closing it to read the code off the
+television does not have it thrown back at you two seconds later.
+
+A receiver with a password set wants that password in the same field.
+
+Pairing is remembered by doubletake, so the code is asked for once per
+receiver. If a cast sits in "connecting" while the television shows a code,
+castr did not recognise the prompt: it needs castr newer than 0.2.0 for
+doubletake 0.5.0.
 
 ## Mirror and extend
 
@@ -87,16 +104,20 @@ re-pair with the television.
 
 ## How it talks to castr
 
-Three commands, all of them read-only until you click something:
+Four commands, all of them read-only until you click something:
 
 | command | when |
 |---|---|
 | `castr bar` | polled every 2s; never starts a daemon |
 | `castr list --json` | only while the panel is open |
-| `castr status --json` | only while the panel is open |
+| `castr status --json` | while the panel is open, and while a cast is connecting |
+| `castr pin <id> <code>` | when you send a pairing code |
 
 Polling `castr bar` cannot start or keep alive a background daemon, so an idle
-machine stays idle.
+machine stays idle. `castr status` is also asked while a cast is connecting,
+because that is when a receiver may want a code and the panel is usually
+closed; a cast in progress means the daemon is already running, so this cannot
+start one either.
 
 ## Licence
 
