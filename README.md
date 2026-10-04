@@ -99,12 +99,14 @@ own resolution and refresh rate — castr does not touch it.
 
 **Extend** gives you a second desktop. When the share prompt appears, pick the
 output named `castr`, not your own screen; the portal remembers that choice.
-If you pick wrong, `castr reset-share extend` asks again without making you
-re-pair with the television.
+If you pick wrong, the reset button next to the mode hint (or
+`castr reset-share extend`) forgets the choice so the next cast asks again,
+without making you re-pair with the television. It stops a running cast
+first, because the choice is rewritten when the cast ends.
 
 ## How it talks to castr
 
-Four commands, all of them read-only until you click something:
+Five commands, all of them read-only until you click something:
 
 | command | when |
 |---|---|
@@ -112,6 +114,7 @@ Four commands, all of them read-only until you click something:
 | `castr list --json` | only while the panel is open |
 | `castr status --json` | while the panel is open, and while a cast is connecting |
 | `castr pin <id> <code>` | when you send a pairing code |
+| `castr reset-share <mode>` | when you click the reset button |
 
 Polling `castr bar` cannot start or keep alive a background daemon, so an idle
 machine stays idle. `castr status` is also asked while a cast is connecting,

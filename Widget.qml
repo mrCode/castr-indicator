@@ -18,6 +18,8 @@
 //                        cast is connecting, because that is when a receiver
 //                        may ask for a pairing code
 //   castr pin <id> <code>  sends the code the receiver is showing
+//   castr reset-share <mode>  forgets which output is shared, so the share
+//                        prompt asks again on the next cast
 //
 // It parses JSON rather than scraping the human output, which would break the
 // moment a column width changed.
@@ -72,6 +74,13 @@ Panel {
   // rather than on every poll: a user who closed the panel to read the code
   // off the television must not have it thrown back at them two seconds later.
   property string pinOpenedFor: ""
+
+  // ---- share reset ----
+  // The screen-share portal remembers what was picked for each mode. Pick
+  // the wrong output once for extend (your own screen instead of the castr
+  // output) and every later extend is a mirror with no prompt to fix it.
+  property bool resetting: false
+  property string resetNote: ""
 
   // Whether the castr binary exists at all. Checked through sh, because a
   // Process whose binary is missing emits NO onExited -- it fails to start and
@@ -213,6 +222,14 @@ Panel {
     pinFocusTimer.restart()
   }
 
+  function resetShare() {
+    if (root.resetting) return
+    root.resetting = true
+    root.resetNote = ""
+    resetProc.command = ["castr", "reset-share", root.mode]
+    resetProc.running = true
+  }
+
   function submitPin() {
     var code = String(pinField.text || "").trim()
     if (!root.pinSession || code === "" || root.pinSending) return
@@ -229,6 +246,7 @@ Panel {
     } else {
       root.listError = ""
       root.actionDeviceId = ""
+      root.resetNote = ""
     }
   }
 
@@ -324,6 +342,23 @@ Panel {
       var reason = String(pinStderr.text || "").trim()
       root.pinError = reason !== "" ? reason : "castr could not send the code"
       root.focusPinField()
+    }
+  }
+
+  Process {
+    id: resetProc
+    stdout: StdioCollector { id: resetStdout }
+    stderr: StdioCollector { id: resetStderr }
+    onExited: function(exitCode) {
+      root.resetting = false
+      // castr says what it did on stdout and what went wrong on stderr; both
+      // are one line and the user's own next step, so they go under the pill.
+      var out = String(exitCode === 0 ? resetStdout.text : resetStderr.text || "").trim()
+      root.resetNote = out !== "" ? out
+        : exitCode === 0 ? "You will be asked what to share on the next cast."
+        : "castr could not reset the share"
+      root.refreshStatus()
+      root.refreshPanel()
     }
   }
 
@@ -666,14 +701,51 @@ Panel {
           onChanged: function(value) { root.mode = value }
         }
 
-        Text {
+        Item {
           width: parent.width
           visible: root.installed
-          text: root.mode === "extend"
-            ? "A second desktop on the receiver. Pick the castr output if asked what to share."
-            : "Shows this screen on the receiver."
+          implicitHeight: Math.max(modeHint.implicitHeight, resetButton.implicitHeight)
+
+          Text {
+            id: modeHint
+            anchors.left: parent.left
+            anchors.right: resetButton.left
+            anchors.rightMargin: Style.spacing.md
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.mode === "extend"
+              ? "A second desktop on the receiver. Pick the castr output if asked what to share."
+              : "Shows this screen on the receiver."
+            textFormat: Text.PlainText
+            color: Qt.darker(root.fg, 1.5)
+            font.family: root.bar.fontFamily
+            font.pixelSize: Style.font.caption
+            wrapMode: Text.WordWrap
+          }
+
+          // The way out of a wrong answer at the share prompt. It stops any
+          // live cast first: doubletake rewrites the remembered choice when it
+          // exits, so clearing it under a running cast is undone moments later.
+          PanelActionButton {
+            id: resetButton
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            iconText: root.resetting ? "󰔟" : "󰑓"
+            tooltipText: "Forget which screen is shared for " + root.mode
+                       + "\nStops the cast; the next one asks again"
+            enabled: !root.resetting
+            foreground: root.fg
+            hoverColor: Color.urgent
+            fontFamily: root.bar.fontFamily
+            onClicked: root.resetShare()
+          }
+        }
+
+        Text {
+          width: parent.width
+          visible: root.installed && root.resetNote !== ""
+          text: root.resetNote
           textFormat: Text.PlainText
-          color: Qt.darker(root.fg, 1.5)
+          color: Qt.darker(root.fg, 1.3)
           font.family: root.bar.fontFamily
           font.pixelSize: Style.font.caption
           wrapMode: Text.WordWrap
