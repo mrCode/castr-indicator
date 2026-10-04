@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "castr.indicator",
   "name": "Cast indicator",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "author": "Basem Aljedai",
   "description": "Cast your screen to an Apple TV or a Chromecast from the bar: mirror or extend, with a live indicator",
   "kinds": [
