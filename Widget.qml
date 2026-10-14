@@ -70,6 +70,10 @@ Panel {
   readonly property bool awaitingPin: pinSession !== null
   property string pinError: ""
   property bool pinSending: false
+  // What has been typed into the pairing card. Held here, not in a text
+  // input -- see pinInput for why there is no TextField.
+  property string pinCode: ""
+  readonly property int maxCodeLength: 128
   // The device the panel last opened itself for. Opening once per request
   // rather than on every poll: a user who closed the panel to read the code
   // off the television must not have it thrown back at them two seconds later.
@@ -204,12 +208,15 @@ Panel {
     if (!waiting) {
       root.pinOpenedFor = ""
       root.pinError = ""
+      // Typed and never sent -- possibly a password. Nothing is waiting for
+      // it any more, so it is not kept.
+      root.pinCode = ""
       return
     }
     if (root.pinOpenedFor !== waiting.device_id) {
       root.pinOpenedFor = waiting.device_id
       root.pinError = ""
-      pinField.text = ""
+      root.pinCode = ""
       if (!root.opened) root.open()
       root.focusPinField()
     }
@@ -243,7 +250,7 @@ Panel {
   // for those, castr's own prompt asks for it instead, which keeps the code off
   // the command line too.
   function submitPin() {
-    var code = String(pinField.text || "").trim()
+    var code = String(root.pinCode || "").trim()
     if (!root.pinSession || code === "" || root.pinSending) return
     root.pinSending = true
     root.pinError = ""
@@ -383,7 +390,7 @@ Panel {
       secret = ""
       root.pinSending = false
       if (exitCode === 0) {
-        pinField.text = ""
+        root.pinCode = ""
         // The session moves on to streaming (or fails) in its own time; the
         // next status poll shows which, and the pairing card goes with it.
         root.refreshStatus()
@@ -421,8 +428,7 @@ Panel {
     repeat: false
     onTriggered: {
       if (root.opened && root.awaitingPin) {
-        pinField.selectAll()
-        pinField.forceActiveFocus()
+        pinInput.forceActiveFocus()
       }
     }
   }
@@ -496,7 +502,7 @@ Panel {
       anchors.fill: parent
       // The catcher claims every key before descendants see it, so while the
       // code field is being typed into it has to stand aside.
-      blocked: pinField.activeFocus
+      blocked: pinInput.activeFocus
       onCloseRequested: root.close()
       onTabRequested: function(direction) { root.switchPanel(direction) }
 
@@ -615,27 +621,82 @@ Panel {
 
             Item {
               width: parent.width
-              height: pinField.implicitHeight
+              height: pinInput.height
 
-              TextField {
-                id: pinField
+              // NOT a TextField, and no other editable text input either.
+              //
+              // An editable text input makes Qt fetch the clipboard owner's data every
+              // time the clipboard changes, with no size limit and no deadline -- so any
+              // application holding the clipboard could stall the shell or exhaust its
+              // memory, and the shell is shared by every widget on the bar. A hidden
+              // input is still an input: it existed for as long as the panel did. A
+              // marketplace reviewer found it.
+              //
+              // This item only takes keystrokes. It never pastes and never touches the
+              // clipboard; a code is four digits read off a television, and a receiver
+              // password is typed, not copied.
+              Item {
+                id: pinInput
                 anchors.left: parent.left
                 anchors.right: pinSend.left
                 anchors.rightMargin: Style.spacing.md
                 anchors.verticalCenter: parent.verticalCenter
-                enabled: !root.pinSending
-                placeholderText: "Code on the screen"
-                foreground: root.fg
-                font.family: root.bar.fontFamily
-                // Plain text, not a password field: the code is already on a
-                // television in the same room, and seeing a typo beats
-                // re-reading four digits off the far wall.
-                onAccepted: root.submitPin()
+                height: pinDisplay.implicitHeight + Style.spacing.sm * 2
+                activeFocusOnTab: true
+
+                Rectangle {
+                  anchors.fill: parent
+                  radius: Style.cornerRadius
+                  color: "transparent"
+                  border.width: 1
+                  border.color: pinInput.activeFocus ? Color.accent : Qt.darker(root.fg, 1.8)
+                }
+
+                Text {
+                  id: pinDisplay
+                  anchors.left: parent.left
+                  anchors.right: parent.right
+                  anchors.leftMargin: Style.spacing.sm
+                  anchors.rightMargin: Style.spacing.sm
+                  anchors.verticalCenter: parent.verticalCenter
+                  // Plain text, not a password field: the code is already on a television
+                  // in the same room, and seeing a typo beats re-reading four digits off
+                  // the far wall.
+                  text: root.pinCode !== "" ? root.pinCode : "Code on the screen"
+                  textFormat: Text.PlainText
+                  color: root.pinCode !== "" ? root.fg : Qt.darker(root.fg, 1.6)
+                  font.family: root.bar.fontFamily
+                  font.pixelSize: Style.font.body
+                  elide: Text.ElideLeft
+                }
+
+                MouseArea {
+                  anchors.fill: parent
+                  onClicked: pinInput.forceActiveFocus()
+                }
+
                 Keys.onPressed: function(event) {
+                  if (root.pinSending) { event.accepted = true; return }
                   if (event.key === Qt.Key_Escape) {
-                    root.close()
-                    event.accepted = true
+                    root.close(); event.accepted = true; return
                   }
+                  if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    root.submitPin(); event.accepted = true; return
+                  }
+                  if (event.key === Qt.Key_Backspace) {
+                    root.pinCode = root.pinCode.slice(0, -1); event.accepted = true; return
+                  }
+                  // Nothing with Ctrl, Alt or Meta held: Ctrl+V is a paste, and this
+                  // field never pastes.
+                  if (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) return
+                  var t = String(event.text || "")
+                  if (t === "" || root.pinCode.length + t.length > root.maxCodeLength) return
+                  for (var i = 0; i < t.length; i++) {
+                    var c = t.charCodeAt(i)
+                    if (c < 32 || c === 127) return
+                  }
+                  root.pinCode += t
+                  event.accepted = true
                 }
               }
 
@@ -645,7 +706,7 @@ Panel {
                 anchors.verticalCenter: parent.verticalCenter
                 iconText: root.pinSending ? "󰔟" : "󰌑"
                 tooltipText: "Send the code"
-                enabled: !root.pinSending && String(pinField.text).trim() !== ""
+                enabled: !root.pinSending && String(root.pinCode).trim() !== ""
                 foreground: root.fg
                 hoverColor: Color.accent
                 fontFamily: root.bar.fontFamily

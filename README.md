@@ -87,7 +87,12 @@ television does not have it thrown back at you two seconds later.
 
 A receiver with a password set wants that password in the same field. Either
 way the panel hands it to castr over stdin, never as a command-line argument,
-where every account on the machine could read it. That needs castr 0.2.3 or
+where every account on the machine could read it.
+
+The field takes typing only, not paste. It is deliberately not a native text
+input: those make Qt pull in the clipboard owner's data on every clipboard
+change, with no size limit, and the shell they would run in is shared by every
+widget on the bar. That needs castr 0.2.3 or
 newer; with an older castr, Enter opens castr's own prompt for the code instead.
 
 Pairing is remembered by doubletake, so the code is asked for once per
