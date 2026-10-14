@@ -230,12 +230,48 @@ Panel {
     resetProc.running = true
   }
 
+  // The code goes over stdin, never argv. A command line is readable by every
+  // account on the machine -- /proc/<pid>/cmdline is world-readable, so `ps`
+  // shows it -- and a receiver with a password set wants that password in this
+  // same field. A marketplace reviewer flagged the earlier version, which
+  // passed it as an argument. This follows Omarchy's own network panel, which
+  // sends Wi-Fi passwords the same way.
+  //
+  // castr is asked its version first, at send time, so the answer is right
+  // even if castr was upgraded while the shell ran. castr before 0.2.3 cannot
+  // read the code from stdin and would send a literal "-" to the television;
+  // for those, castr's own prompt asks for it instead, which keeps the code off
+  // the command line too.
   function submitPin() {
     var code = String(pinField.text || "").trim()
     if (!root.pinSession || code === "" || root.pinSending) return
     root.pinSending = true
     root.pinError = ""
-    pinProc.command = ["castr", "pin", root.pinSession.device_id, code]
+    pinProc.secret = code
+    pinProc.deviceId = root.pinSession.device_id
+    versionProc.running = true
+  }
+
+  // Whether this castr reads `castr pin <id> -` from stdin: 0.2.3 and later.
+  function readsCodeFromStdin(versionText) {
+    var m = /castr\s+(\S+)/.exec(String(versionText || ""))
+    if (!m) return false
+    // A build from source reports "dev" and is newer than any release.
+    if (m[1] === "dev") return true
+    var v = m[1].split(".").map(function(x) { return parseInt(x, 10) })
+    if (v.length < 3 || v.some(isNaN)) return false
+    if (v[0] !== 0) return v[0] > 0
+    if (v[1] !== 2) return v[1] > 2
+    return v[2] >= 3
+  }
+
+  function sendPinWith(versionText) {
+    if (root.readsCodeFromStdin(versionText)) {
+      pinProc.command = ["castr", "pin", pinProc.deviceId, "-"]
+    } else {
+      pinProc.secret = ""
+      pinProc.command = ["castr", "pin", pinProc.deviceId]
+    }
     pinProc.running = true
   }
 
@@ -325,9 +361,26 @@ Panel {
   }
 
   Process {
+    id: versionProc
+    command: ["castr", "--version"]
+    // Acted on when the output ends rather than on exit, so the version text
+    // is all there. `castr --version` answers before touching the daemon.
+    stdout: StdioCollector { onStreamFinished: root.sendPinWith(text) }
+  }
+
+  Process {
     id: pinProc
+    // Written to stdin as soon as castr starts, then forgotten.
+    property string secret: ""
+    property string deviceId: ""
+    stdinEnabled: true
+    onStarted: {
+      if (secret !== "") write(secret + "\n")
+      secret = ""
+    }
     stderr: StdioCollector { id: pinStderr }
     onExited: function(exitCode) {
+      secret = ""
       root.pinSending = false
       if (exitCode === 0) {
         pinField.text = ""

@@ -85,12 +85,17 @@ waiting, which is what clicking the icon brings back. The panel opens once per
 request rather than on every poll, so closing it to read the code off the
 television does not have it thrown back at you two seconds later.
 
-A receiver with a password set wants that password in the same field.
+A receiver with a password set wants that password in the same field. Either
+way the panel hands it to castr over stdin, never as a command-line argument,
+where every account on the machine could read it. That needs castr 0.2.3 or
+newer; with an older castr, Enter opens castr's own prompt for the code instead.
 
 Pairing is remembered by doubletake, so the code is asked for once per
 receiver. If a cast sits in "connecting" while the television shows a code,
 castr did not recognise the prompt: it needs castr newer than 0.2.0 for
-doubletake 0.5.0.
+doubletake 0.5.0. If the receiver asks on every cast, check its *Settings →
+AirPlay and HomeKit → Require Code*: **Every Time** demands a new code on each
+connection; choose **First Time Only**.
 
 ## Mirror and extend
 
@@ -106,15 +111,16 @@ first, because the choice is rewritten when the cast ends.
 
 ## How it talks to castr
 
-Five commands, all of them read-only until you click something:
+Six commands, all of them read-only until you click something:
 
 | command | when |
 |---|---|
 | `castr bar` | polled every 2s; never starts a daemon |
 | `castr list --json` | only while the panel is open |
 | `castr status --json` | while the panel is open, and while a cast is connecting |
-| `castr pin <id> <code>` | when you send a pairing code |
+| `castr pin <id> -` | when you send a pairing code -- the code goes on stdin |
 | `castr reset-share <mode>` | when you click the reset button |
+| `castr --version` | before sending a code, to know whether castr reads it from stdin |
 
 Polling `castr bar` cannot start or keep alive a background daemon, so an idle
 machine stays idle. `castr status` is also asked while a cast is connecting,
