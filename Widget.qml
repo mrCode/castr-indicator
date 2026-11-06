@@ -781,8 +781,8 @@ Panel {
           visible: !root.installed
           text: "This widget drives the castr command, which is not on your PATH.\n\n"
               + "    yay -S castr\n\n"
-              + "castr then needs doubletake-git for an Apple TV, or GStreamer for a "
-              + "Chromecast; it names the missing one when you cast.\n\n"
+              + "It brings everything it needs to cast to an Apple TV or a "
+              + "Chromecast.\n\n"
               + "The bar picks it up on its own once it is installed."
           textFormat: Text.PlainText
           color: Qt.darker(root.fg, 1.2)

@@ -26,10 +26,11 @@ yay -S castr
 Without it the widget says so and tells you this command, rather than sitting
 there looking idle.
 
-castr then needs whichever backend you cast with — `doubletake-git` for an
-Apple TV, GStreamer for a Chromecast — and neither is involved in the other's
-cast. castr's [Installing](https://github.com/mrCode/castr#installing) section
-has both, and castr names the missing one rather than failing obscurely.
+castr brings both backends with it: for an Apple TV, `castr-airplay`, its own
+build of doubletake, and for a Chromecast, its own code on GStreamer. Nothing
+else needs installing — castr's
+[Installing](https://github.com/mrCode/castr#installing) section explains why
+it does not use whichever doubletake you have.
 
 If you run a firewall, it has to let the receiver reach your machine — neither
 protocol is one-way:
@@ -39,10 +40,6 @@ protocol is one-way:
 | UDP 5353 | mDNS, so receivers are discovered at all |
 | TCP + UDP 60000-60010 | the range an Apple TV connects into to fetch the stream |
 | TCP 8010 | where a Chromecast fetches the stream from |
-
-A Chromecast also needs GStreamer, which castr's package lists as optional
-dependencies — the Chromecast capture is castr's own code rather than
-doubletake's.
 
 Without those, discovery finds nothing or a cast starts and then stalls.
 castr's README carries the exact `ufw` commands:
@@ -95,12 +92,13 @@ change, with no size limit, and the shell they would run in is shared by every
 widget on the bar. That needs castr 0.2.3 or
 newer; with an older castr, Enter opens castr's own prompt for the code instead.
 
-Pairing is remembered by doubletake, so the code is asked for once per
-receiver. If a cast sits in "connecting" while the television shows a code,
-castr did not recognise the prompt: it needs castr newer than 0.2.0 for
-doubletake 0.5.0. If the receiver asks on every cast, check its *Settings →
-AirPlay and HomeKit → Require Code*: **Every Time** demands a new code on each
-connection; choose **First Time Only**.
+Pairing is remembered, so the code is asked for once per receiver. From castr
+0.3.0 the Apple TV's own identity is remembered with it, and a device at its
+address that cannot prove it is that Apple TV is refused rather than shown your
+screen; pairings made with an older castr ask for the code once more to record
+it. If the receiver asks on every cast, check its *Settings → AirPlay and
+HomeKit → Require Code*: **Every Time** demands a new code on each connection;
+choose **First Time Only**.
 
 ## Mirror and extend
 
