@@ -112,15 +112,33 @@ If you pick wrong, the reset button next to the mode hint (or
 without making you re-pair with the television. It stops a running cast
 first, because the choice is rewritten when the cast ends.
 
+## Sound
+
+While a cast runs, the panel shows a **SOUND** row for it: **TV**, **Laptop**
+or **Both**. A cast starts on **TV**, with the laptop quiet, and you can switch
+at any time without stopping it. The laptop's sound always comes back when the
+cast ends.
+
+**Both** suits an Apple TV. On a Chromecast it echoes, because the television
+runs a second or more behind.
+
+If castr cannot route the sound, the row says why and the cast carries on
+with the laptop's sound left alone. The row needs castr 0.4.0 or newer; with an
+older castr it does not appear.
+
 ## How it talks to castr
 
-Six commands, all of them read-only until you click something:
+Nine commands. The first three only read, and the rest run when you click
+something:
 
 | command | when |
 |---|---|
 | `castr bar` | polled every 2s; never starts a daemon |
 | `castr list --json` | only while the panel is open |
 | `castr status --json` | while the panel is open, and while a cast is connecting |
+| `castr start <id> <mode>` | when you click a receiver |
+| `castr stop [<id>]` | when you click stop, or right-click the icon |
+| `castr sound <id> tv\|laptop\|both` | when you pick where a cast's sound plays |
 | `castr pin <id> -` | when you send a pairing code -- the code goes on stdin |
 | `castr reset-share <mode>` | when you click the reset button |
 | `castr --version` | before sending a code, to know whether castr reads it from stdin |

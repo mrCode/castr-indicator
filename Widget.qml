@@ -119,6 +119,12 @@ Panel {
       .replace(/[<>]/g, "")
   }
 
+  readonly property bool hasSoundChoice: {
+    for (var i = 0; i < root.sessions.length; i++)
+      if (root.sessions[i].sound || root.sessions[i].sound_note) return true
+    return false
+  }
+
   function refreshStatus() { if (!statusProc.running) statusProc.running = true }
 
   function refreshPanel() {
@@ -195,6 +201,13 @@ Panel {
     root.actionDeviceId = deviceId
     stopProc.command = deviceId ? ["castr", "stop", deviceId] : ["castr", "stop"]
     stopProc.running = true
+  }
+
+  // Where a cast's sound plays. Only the three literals ever reach castr.
+  function setSound(deviceId, value) {
+    if (value !== "tv" && value !== "laptop" && value !== "both") return
+    soundProc.command = ["castr", "sound", deviceId, value]
+    soundProc.running = true
   }
 
   // Called whenever the session list is refreshed. Picks out a session that
@@ -365,6 +378,11 @@ Panel {
   Process {
     id: stopProc
     onExited: { root.actionDeviceId = ""; root.refreshStatus(); root.refreshPanel() }
+  }
+
+  Process {
+    id: soundProc
+    onExited: root.refreshPanel()
   }
 
   Process {
@@ -773,6 +791,63 @@ Panel {
           width: parent.width
           foreground: root.fg
           visible: root.sessions.length > 0
+        }
+
+        // ---------- where each cast's sound plays ----------
+        PanelSectionHeader {
+          width: parent.width
+          visible: root.hasSoundChoice
+          text: "SOUND"
+          textFormat: Text.PlainText
+          foreground: root.fg
+          fontFamily: root.bar.fontFamily
+        }
+
+        Repeater {
+          model: root.sessions
+          delegate: Column {
+            required property var modelData
+            width: column.width
+            spacing: Style.spacing.sm
+            visible: !!modelData.sound || !!modelData.sound_note
+
+            Text {
+              width: parent.width
+              visible: root.sessions.length > 1
+              text: modelData.name
+              textFormat: Text.PlainText
+              color: root.fg
+              font.family: root.bar.fontFamily
+              font.pixelSize: Style.font.body
+              elide: Text.ElideRight
+            }
+
+            ButtonGroup {
+              width: parent.width
+              visible: !!modelData.sound
+              options: [
+                { value: "tv", label: "TV" },
+                { value: "laptop", label: "Laptop" },
+                { value: "both", label: "Both" }
+              ]
+              value: modelData.sound || ""
+              foreground: root.fg
+              accent: Color.accent
+              fontFamily: root.bar.fontFamily
+              onChanged: function(value) { root.setSound(modelData.device_id, value) }
+            }
+
+            Text {
+              width: parent.width
+              visible: !!modelData.sound_note
+              text: modelData.sound_note || ""
+              textFormat: Text.PlainText
+              color: Qt.darker(root.fg, 1.2)
+              font.family: root.bar.fontFamily
+              font.pixelSize: Style.font.caption
+              wrapMode: Text.WordWrap
+            }
+          }
         }
 
         // ---------- nothing to drive: say so, with the way out ----------
